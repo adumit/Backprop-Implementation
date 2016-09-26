@@ -89,12 +89,8 @@ class DeepNeuralNetwork(NeuralNetwork):
 
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):
         for i in range(0, num_passes):
-            # Forward propagation
             self.feedforward(X)
-            # Backpropagation
             self.backprop(X, y, epsilon)
-            # Optionally print the loss.
-            # This is expensive because it uses the whole dataset, so we don't want to do it too often.
             if print_loss and i % 1000 == 0:
                 print(
                     "Loss after iteration %i: %f" % (i, self.calculate_loss(X, y)))
