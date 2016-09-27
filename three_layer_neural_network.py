@@ -97,8 +97,6 @@ class NeuralNetwork(object):
         # Calculating the loss
 
         # YOU IMPLEMENT YOUR CALCULATION OF THE LOSS HERE
-        # print(self.probs.shape)
-        # print(y.shape)
         data_loss = -np.sum(np.log(self.probs[range(num_examples), y]))
 
         # Add regulatization term to loss (optional)
@@ -183,11 +181,11 @@ def actFun(z, type):
 
     # YOU IMPLMENT YOUR actFun HERE
     if type == 'tanh':
-        return (np.exp(z) - np.exp(-z)) / (np.exp(z) + np.exp(-z))
+        return np.tanh(z)
     elif type == 'sigmoid':
         return 1. / (1. + np.exp(-z))
     elif type == 'relu':
-        np.maximum(z, 0, z)
+        return np.maximum(z, 0, z)
     else:
         raise RuntimeError(
             'Gave actFun an incorrect activation function name: ' + type)
@@ -203,11 +201,11 @@ def diff_actFun(z, type):
 
     # YOU IMPLEMENT YOUR diff_actFun HERE
     if type == 'tanh':
-        return 1. - ((np.exp(z) - np.exp(-z)) / (np.exp(z) + np.exp(-z))) ** 2
+        return 1. - np.tanh(z)**2
     elif type == 'sigmoid':
         return 1. / (1. + np.exp(-z)) * (1. - 1. / (1. + np.exp(-z)))
     elif type == 'relu':
-        return 1. * (z > 0  )
+        return 1. * (z > 0)
     else:
         raise RuntimeError(
             'Gave diff_actFun an incorrect activation function name: ' + type)
@@ -219,10 +217,8 @@ def main():
     # plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
     # plt.show()
 
-    # model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='tanh')
-    model = DeepNeuralNetwork(nn_input_dim=2, nn_output_dim=2, layers=[9, 10, 9],
-                              layer_functions=['relu', 'tanh', 'tanh'])
-    model.fit_model(X,y)
+    model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=20, nn_output_dim=2, actFun_type='tanh')
+    model.fit_model(X,y, num_passes=200000)
     model.visualize_decision_boundary(X,y)
 
 if __name__ == "__main__":

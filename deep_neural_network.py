@@ -26,6 +26,8 @@ class DeepNeuralNetwork(NeuralNetwork):
                    for l in range(1, len(self.layer_sizes))]
         # Create a B for each layer except the last
         self.Bs = [np.zeros((1, self.layer_sizes[l+1])) for l in range(0, len(self.layer_sizes)-1)]
+        self.dWs = []
+        self.dBs = []
 
 
     def feedforward(self, X):
@@ -78,26 +80,22 @@ class DeepNeuralNetwork(NeuralNetwork):
         # Calculating the loss
 
         # YOU IMPLEMENT YOUR CALCULATION OF THE LOSS HERE
-        # print(self.probs.shape)
-        # print(y.shape)
         data_loss = -np.sum(np.log(self.probs[range(num_examples), y]))
 
         # Add regulatization term to loss (optional)
-        # data_loss += self.reg_lambda / 2. * (np.sum(np.square(self.Ws)) + np.sum(np.square(self.Ws)))
+        sum_of_squares = 0
+        for w in self.Ws:
+            sum_of_squares += np.sum(np.square(w))
+        data_loss += self.reg_lambda / 2. * sum_of_squares
         return (1. / num_examples) * data_loss
 
 
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):
         for i in range(0, num_passes):
-            # Forward propagation
             self.feedforward(X)
-            # Backpropagation
             self.backprop(X, y, epsilon)
-            # Optionally print the loss.
-            # This is expensive because it uses the whole dataset, so we don't want to do it too often.
             if print_loss and i % 1000 == 0:
-                print(
-                    "Loss after iteration %i: %f" % (i, self.calculate_loss(X, y)))
+                print("Loss after iteration %i: %f" % (i, self.calculate_loss(X, y)))
 
 
 class Layer():
@@ -115,13 +113,8 @@ class Layer():
 
     def feedforward(self, input_act, weights, bias):
         """Apply the activation function """
-        # print(input_act.shape)
-        # print(weights.shape)
-        # print(bias.shape)
         self.input = input_act
         self.z = input_act.dot(weights) + bias
-        # print(self.z.shape)
-        # print(self.input.shape)
         self.output = actFun(self.z, self.act_func_type)
         return self.output
 
@@ -133,10 +126,6 @@ class Layer():
             dW: Derivative of loss with respect to input weights
             dB: Derivative of loss with respect to bias
         """
-        # print(self.z.shape)
-        # print(dLdZ_right.shape)
-        # print(W_right.shape)
-        # print(self.output.shape)
         self.dLdZ = np.multiply(diff_actFun(self.z, self.act_func_type), dLdZ_right.dot(W_right.T))
         dW = self.input.T.dot(self.dLdZ)
         dB = self.dLdZ.sum(axis=0)
@@ -145,9 +134,9 @@ class Layer():
 def main():
     # Generate make moons data
     X, y = generate_data()
-    model = DeepNeuralNetwork(nn_input_dim=2, nn_output_dim=2, layers=[9, 10, 9],
-                              layer_functions=['relu', 'tanh', 'tanh'])
-    model.fit_model(X,y)
+    model = DeepNeuralNetwork(nn_input_dim=2, nn_output_dim=2, layers=[6,8,6],
+                              layer_functions=['tanh', 'tanh', 'tanh'])
+    model.fit_model(X,y, num_passes=20000, epsilon=0.001)
     model.visualize_decision_boundary(X,y)
 
 if __name__ == "__main__":
