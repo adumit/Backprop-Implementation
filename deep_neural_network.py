@@ -134,9 +134,9 @@ class Layer():
 def main():
     # Generate make moons data
     X, y = generate_data()
-    model = DeepNeuralNetwork(nn_input_dim=2, nn_output_dim=2, layers=[6,8,6],
-                              layer_functions=['tanh', 'tanh', 'tanh'])
-    model.fit_model(X,y, num_passes=20000, epsilon=0.001)
+    model = DeepNeuralNetwork(nn_input_dim=2, nn_output_dim=2, layers=[15,50,15],
+                              layer_functions=['relu', 'relu', 'relu'], reg_lambda=0)
+    model.fit_model(X,y, num_passes=20000, epsilon=0.01)
     model.visualize_decision_boundary(X,y)
 
 if __name__ == "__main__":
