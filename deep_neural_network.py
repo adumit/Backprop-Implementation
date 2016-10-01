@@ -89,6 +89,15 @@ class DeepNeuralNetwork(NeuralNetwork):
         data_loss += self.reg_lambda / 2. * sum_of_squares
         return (1. / num_examples) * data_loss
 
+    def calculate_misclassifcation(self, X, y):
+        num_examples = len(X)
+        self.feedforward(X)
+
+        # Calculate misclassification
+        # cor_nums = np.apply_along_axis(lambda a: np.argmax(a), 1, y)
+        cor_nums = y
+        pred_nums = np.apply_along_axis(lambda a: np.argmax(a), 1, self.probs)
+        return 1. - np.sum(cor_nums == pred_nums)/num_examples
 
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):
         for i in range(0, num_passes):
@@ -96,6 +105,7 @@ class DeepNeuralNetwork(NeuralNetwork):
             self.backprop(X, y, epsilon)
             if print_loss and i % 1000 == 0:
                 print("Loss after iteration %i: %f" % (i, self.calculate_loss(X, y)))
+                print("Misclassification after iteration %i: %f" % (i, self.calculate_misclassifcation(X, y)))
 
 
 class Layer():
@@ -131,12 +141,26 @@ class Layer():
         dB = self.dLdZ.sum(axis=0)
         return dW, dB
 
+
+def get_mnist_data_batch(mnist_data):
+    batch = mnist_data.train.next_batch(3000)
+    data = batch[0]
+    labels = batch[1]
+    return data,labels.astype(int)
+
+
 def main():
+    from tensorflow.examples.tutorials.mnist import input_data
+    mnist = input_data.read_data_sets('MNIST_data')
     # Generate make moons data
-    X, y = generate_data()
-    model = DeepNeuralNetwork(nn_input_dim=2, nn_output_dim=2, layers=[15,50,15],
-                              layer_functions=['relu', 'relu', 'relu'], reg_lambda=0)
-    model.fit_model(X,y, num_passes=20000, epsilon=0.01)
+    # X, y = generate_data()
+    # Generate MNIST data
+    X, y = get_mnist_data_batch(mnist)
+    # model = DeepNeuralNetwork(nn_input_dim=2, nn_output_dim=2, layers=[500, 300],
+    #                           layer_functions=['tanh', 'tanh'], reg_lambda=0)
+    model = DeepNeuralNetwork(nn_input_dim=784, nn_output_dim=10, layers=[500, 150],
+                              layer_functions=['tanh', 'tanh'], reg_lambda=0.001)
+    model.fit_model(X,y, num_passes=20000, epsilon=0.0005)
     model.visualize_decision_boundary(X,y)
 
 if __name__ == "__main__":
