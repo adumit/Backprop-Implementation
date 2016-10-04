@@ -12,9 +12,10 @@ import tensorflow as tf
 sess = tf.InteractiveSession()
 
 
-def weight_variable(shape):
+def weight_variable(shape, name="W"):
     '''
     Initialize weights
+    :param name: name of the variable
     :param shape: shape of weights, e.g. [w, h ,Cin, Cout] where
     w: width of the filters
     h: height of the filters
@@ -23,9 +24,11 @@ def weight_variable(shape):
     :return: a tensor variable for weights with initial values
     '''
 
-    # IMPLEMENT YOUR WEIGHT_VARIABLE HERE
-    initial = tf.truncated_normal(shape, stddev=0.1)
-    return tf.Variable(initial)
+    # IMPLEMENT YOUR WEIGHT_VARIABLE HERE - standard
+    # initial = tf.truncated_normal(shape, stddev=0.1)
+    # return tf.Variable(initial)
+    # Xavier initializer
+    return tf.get_variable(name, shape=shape, initializer=tf.contrib.layers.xavier_initializer())
 
 
 def bias_variable(shape):
@@ -74,9 +77,22 @@ def max_pool_2x2(x):
     return h_max
 
 
+def variable_summaries(var, name):
+  with tf.name_scope('summaries'):
+    mean = tf.reduce_mean(var)
+    tf.scalar_summary('mean/' + name, mean)
+    with tf.name_scope('stddev'):
+      stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+    tf.scalar_summary('sttdev/' + name, stddev)
+    tf.scalar_summary('max/' + name, tf.reduce_max(var))
+    tf.scalar_summary('min/' + name, tf.reduce_min(var))
+    tf.histogram_summary(name, var)
+
+
 def main():
     # Specify training parameters
-    result_dir = './results/' # directory where the results from the training are saved
+    dir_name = 'xavier_initializer_relu'
+    result_dir = './results/' + dir_name # directory where the results from the training are saved
     max_step = 5500 # the maximum iterations. After max_step iterations, the training will stop no matter what
 
     start_time = time.time() # start timing
@@ -91,31 +107,75 @@ def main():
     x_image = tf.reshape(x, [-1, 28, 28, 1])
 
     # first convolutional layer
-    W_conv1 = weight_variable([5,5,1,32])
+    W_conv1 = weight_variable([5,5,1,32], 'W_conv1')
+    variable_summaries(W_conv1, 'conv_layer1/weights')
+    tf.histogram_summary('conv_layer1/weight_hist', W_conv1)
     b_conv1 = bias_variable([32])
-    h_conv1 = tf.nn.relu(conv2d(x_image, W_conv1) + b_conv1)
+    variable_summaries(b_conv1, 'conv_layer1/biases')
+    tf.histogram_summary('conv_layer1/bias_hist', b_conv1)
+    pre_relu1 = conv2d(x_image, W_conv1) + b_conv1
+    variable_summaries(pre_relu1, 'conv_layer1/net_input')
+    tf.histogram_summary('conv_layer1/net_input_hist', pre_relu1)
+    h_conv1 = tf.nn.relu(pre_relu1)
+    variable_summaries(h_conv1, 'conv_layer1/activation')
+    tf.histogram_summary('conv_layer1/activation_hist', h_conv1)
     h_pool1 = max_pool_2x2(h_conv1)
+    variable_summaries(h_pool1, 'conv_layer1/postpool')
+    tf.histogram_summary('conv_layer1/postpool_hist', h_pool1)
+
 
     # second convolutional layer
-    W_conv2 = weight_variable([5, 5, 32, 64])
+    W_conv2 = weight_variable([5, 5, 32, 64], 'W_conv2')
+    variable_summaries(W_conv2, 'conv_layer2/weights')
+    tf.histogram_summary('conv_layer2/weight_hist', W_conv2)
     b_conv2 = bias_variable([64])
-    h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2) + b_conv2)
+    variable_summaries(b_conv2, 'conv_layer2/biases')
+    tf.histogram_summary('conv_layer2/bias_hist', b_conv2)
+    pre_relu2 = conv2d(h_pool1, W_conv2) + b_conv2
+    variable_summaries(pre_relu2, 'conv_layer2/net_input')
+    tf.histogram_summary('conv_layer2/net_input_hist', pre_relu2)
+    h_conv2 = tf.nn.relu(pre_relu2)
+    variable_summaries(h_conv2, 'conv_layer2/activation')
+    tf.histogram_summary('conv_layer2/activation_hist', h_conv2)
     h_pool2 = max_pool_2x2(h_conv2)
+    variable_summaries(h_pool2, 'conv_layer2/postpool')
+    tf.histogram_summary('conv_layer2/postpool_hist', h_pool2)
 
     # densely connected layer
-    W_fc1 = weight_variable([7 * 7 * 64, 1024])
+    W_fc1 = weight_variable([7 * 7 * 64, 1024], 'W_fc1')
+    variable_summaries(W_fc1, 'fc_layer3/weights')
+    tf.histogram_summary('fc_layer3/weights_hist', W_fc1)
     b_fc1 = bias_variable([1024])
+    variable_summaries(b_fc1, 'fc_layer3/biases')
+    tf.histogram_summary('fc_layer3/biases_hist', b_fc1)
     h_pool2_flat = tf.reshape(h_pool2, [-1, 7*7*64])
-    h_fc1 = tf.nn.relu(tf.matmul(h_pool2_flat, W_fc1) + b_fc1)
+    variable_summaries(h_pool2_flat, 'fc_layer3/postpool')
+    tf.histogram_summary('fc_layer3/postpool_hist', h_pool2_flat)
+    pre_relu3 = tf.matmul(h_pool2_flat, W_fc1) + b_fc1
+    variable_summaries(pre_relu3, 'fc_layer3/net_input')
+    tf.histogram_summary('fc_layer3/net_input_hist', pre_relu3)
+    h_fc1 = tf.nn.relu(pre_relu3)
+    variable_summaries(h_fc1, 'fc_layer3/activation')
+    tf.histogram_summary('fc_layer3/activation_hist', h_fc1)
 
     # dropout
     keep_prob = tf.placeholder(tf.float32)
     h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
+    tf.scalar_summary('dropout_keep_probability', keep_prob)
 
     # softmax
-    W_fc2 = weight_variable([1024, 10])
+    W_fc2 = weight_variable([1024, 10], 'W_fc2')
+    variable_summaries(W_fc2, 'softmax_layer/weights')
+    tf.histogram_summary('softmax_layer/weights_hist', W_fc2)
     b_fc2 = bias_variable([10])
-    y_conv = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
+    variable_summaries(b_fc2, 'softmax_layer/biases')
+    tf.histogram_summary('softmax_layer/biases_hist', b_fc2)
+    pre_softmax = tf.matmul(h_fc1_drop, W_fc2) + b_fc2
+    variable_summaries(pre_softmax, 'softmax_layer/net_input')
+    tf.histogram_summary('softmax_layer/net_input_hist', pre_softmax)
+    y_conv = tf.nn.softmax(pre_softmax)
+    variable_summaries(y_conv, 'softmax_layer/activation')
+    tf.histogram_summary('softmax_layer/activation_hist', y_conv)
 
     # FILL IN THE FOLLOWING CODE TO SET UP THE TRAINING
 
@@ -162,12 +222,30 @@ def main():
         if i % 1100 == 0 or i == max_step:
             checkpoint_file = os.path.join(result_dir, 'checkpoint')
             saver.save(sess, checkpoint_file, global_step=i)
+            validation_accuracy = accuracy.eval(feed_dict={
+                x: mnist.validation.images, y_: mnist.validation.labels, keep_prob: 1.0})
+            print("validation accuracy %g" % validation_accuracy)
+            variable_summaries(validation_accuracy, 'validation_error')
+            test_error = accuracy.eval(feed_dict={
+                x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
+            print("test accuracy %g" % test_error)
+            variable_summaries(test_error, 'test_error')
+
 
         train_step.run(feed_dict={x: batch[0], y_: batch[1], keep_prob: 0.5}) # run one train_step
 
     # print test error
-    print("test accuracy %g"%accuracy.eval(feed_dict={
-        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
+
+    test_error = accuracy.eval(feed_dict={
+        x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0})
+    print("test accuracy %g" % test_error)
+    variable_summaries(test_error, 'test_error')
+    validation_accuracy = accuracy.eval(feed_dict={
+        x: mnist.validation.images, y_: mnist.validation.labels,
+        keep_prob: 1.0})
+    print("validation accuracy %g" % validation_accuracy)
+    variable_summaries(validation_accuracy, 'validation_error')
+
 
     stop_time = time.time()
     print('The training takes %f second to finish'%(stop_time - start_time))

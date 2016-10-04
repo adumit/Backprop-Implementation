@@ -158,9 +158,9 @@ def main():
     X, y = get_mnist_data_batch(mnist)
     # model = DeepNeuralNetwork(nn_input_dim=2, nn_output_dim=2, layers=[500, 300],
     #                           layer_functions=['tanh', 'tanh'], reg_lambda=0)
-    model = DeepNeuralNetwork(nn_input_dim=784, nn_output_dim=10, layers=[500, 150],
-                              layer_functions=['tanh', 'tanh'], reg_lambda=0.001)
-    model.fit_model(X,y, num_passes=20000, epsilon=0.0005)
+    model = DeepNeuralNetwork(nn_input_dim=784, nn_output_dim=10, layers=[500, 300],
+                              layer_functions=['tanh', 'tanh'], reg_lambda=0.0001)
+    model.fit_model(X,y, num_passes=20000, epsilon=0.0001)
     model.visualize_decision_boundary(X,y)
 
 if __name__ == "__main__":
